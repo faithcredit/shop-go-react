@@ -1,0 +1,27 @@
+pageNumber,  := strconv.Atoi(c.DefaultQuery("page", "1"))
+pageSize, _ := strconv.Atoi(c.DefaultQuery("size", "10"))
+
+nameFilter := c.Query("name")
+categoryFilter := c.Query("category")
+
+ctx, cancel := context.WithTimeout(context.Background(), 10time.Second)
+defer cancel()
+
+filter := bson.M{}
+
+if nameFilter != "" {
+	filter["name"] = bson.M{"$regex": nameFilter, "$options": "i"}
+}
+
+if categoryFilter != "" {
+	filter["category"] = categoryFilter
+}
+
+options := options.Find().SetSkip((pageNumber - 1) pageSize).SetLimit(pageSize)
+
+cursor, err := collection.Find(ctx, filter, options)
+
+if err != nil {
+	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	return
+}
